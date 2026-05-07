@@ -1,0 +1,15 @@
+{
+	"admin/status/speedtest": {
+		"title": "Speed Test",
+		"order": 90,
+		"action": {
+			"type": "view",
+			"path": "speedtest/overview"
+		},
+		"depends": {
+			"fs": {
+				"/usr/bin/speedtest-go": "executable"
+			}
+		}
+	}
+}

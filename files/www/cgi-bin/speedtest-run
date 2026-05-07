@@ -1,0 +1,74 @@
+#!/bin/sh
+
+LOG=/tmp/speedtest.log
+PID=/tmp/speedtest.pid
+
+echo "Content-Type: application/json"
+echo "Cache-Control: no-cache"
+echo "Access-Control-Allow-Origin: *"
+echo ""
+
+ACTION=$(echo "$QUERY_STRING" | sed -n 's/.*action=\([^&]*\).*/\1/p')
+
+case "$ACTION" in
+    start)
+        # Kill any existing run
+        if [ -f "$PID" ]; then
+            kill "$(cat "$PID")" 2>/dev/null
+            rm -f "$PID"
+        fi
+        rm -f "$LOG"
+
+        # Run speedtest-go in background, capture output line by line
+        (
+            /usr/bin/speedtest-go 2>&1 | while IFS= read -r line; do
+                printf '%s\n' "$line" >> "$LOG"
+            done
+            rm -f "$PID"
+        ) &
+        echo $! > "$PID"
+
+        printf '{"status":"started"}'
+        ;;
+
+    poll)
+        if [ ! -f "$LOG" ]; then
+            printf '{"status":"waiting","lines":[]}'
+            exit 0
+        fi
+
+        RUNNING="false"
+        if [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null; then
+            RUNNING="true"
+        fi
+
+        # Build JSON array of lines
+        # - tr: strip all non-ASCII bytes (handles UTF-8 check marks, spinner chars)
+        # - sed: strip ANSI escape sequences, backslash-escape for JSON
+        # - awk: skip blank lines, trim leading spaces, wrap each line as JSON string
+        LINES=$(tr -cd '\11\12\15\40-\176' < "$LOG" | \
+            sed \
+                -e 's/\x1b\[[0-9;]*m//g' \
+                -e 's/\\/\\\\/g' \
+                -e 's/"/\\"/g' \
+                -e 's/\r//g' | \
+            awk 'NF > 0 {
+                gsub(/^[[:space:]]+/, "")
+                printf "\"%s\",", $0
+            }' | sed 's/,$//')
+
+        printf '{"status":"%s","lines":[%s]}' "$RUNNING" "$LINES"
+        ;;
+
+    stop)
+        if [ -f "$PID" ]; then
+            kill "$(cat "$PID")" 2>/dev/null
+            rm -f "$PID"
+        fi
+        printf '{"status":"stopped"}'
+        ;;
+
+    *)
+        printf '{"status":"error","message":"Unknown action"}'
+        ;;
+esac

@@ -1,0 +1,18 @@
+{
+	"luci-app-speedtest": {
+		"description": "Grant access to Speed Test page",
+		"read": {
+			"cgi-io": [ "*" ],
+			"file": {
+				"/tmp/speedtest.log": [ "read" ],
+				"/usr/bin/speedtest-go": [ "exec" ]
+			}
+		},
+		"write": {
+			"file": {
+				"/tmp/speedtest.log": [ "write" ],
+				"/tmp/speedtest.pid": [ "write" ]
+			}
+		}
+	}
+}
