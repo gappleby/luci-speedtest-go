@@ -1,5 +1,7 @@
 # luci-app-speedtest
 
+!WARNING - IN DEVELOPMENT STILL!
+
 A LuCI web interface for [speedtest-go](https://github.com/showwin/speedtest-go) on OpenWRT 25.x.
 
 Adds a **Status → Speed Test** page to the OpenWRT web interface. Run a full network speed test (latency, download, upload, packet loss) from the router UI without needing shell access.
